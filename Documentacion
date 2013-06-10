@@ -1,0 +1,104 @@
+Instituto Tecnológico de Costa Rica Sede San Carlos
+ 
+
+
+Fundamentos de organización del computador
+I Semestre 2013
+ 
+
+Katherine Salazar Pérez
+201234542
+ 
+
+Marco Ramírez Venegas
+201204550
+
+
+
+Tarea Programada 
+   
+Calculadora de operaciones básicas en assembler 
+
+
+Fecha de entrega: 9 de junio del 2013
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Introducción
+
+	Llevamos a el desarrollo de este proyecto para realizar un calculadora con las cuatro funciones básicas, suma, resta, división y multiplicación. Siendo de nuestra propia creación, recolectando información  para poder aclarar dudas propias.
+		
+Descripción del Problema
+
+  Realizar una calculadora que recibe 2 dígitos, primero un dígito y luego otro. Se le pide al usuario que ingrese un signo de operación, +, -, *, !, para suma, resta, multiplicación y división respectivamente. Seguido de esto se mostrará el resultado de dicha operación.
+Se debe de comprobar que los dígitos no sean letras, siendo letras se mostrará una alerta solicitando que ingrese nuevamente los dígitos. cuando se solicite ingresar el operando, si se ingresa algún otro carácter se solicitará que ingrese de nuevo el signo de operación.
+
+Descripción de la Solución
+
+  Se le pide al usuario ingresar un dígito, comprueba si es numero, si es número, lo guarda en un espacio de memoria, si no es número retorna al inicio, solicitando nuevamente un número. Cuando se avanza al segundo dígito, se valida que sea un número, si no lo es, se devuelve al inicio solicitando que sea los caracteres ingresados sean números.
+
+  La tercera línea solicita que se ingrese un operando, si no se ingresa un operando solo solicita que ingrese el operando. 
+
+  Finalmente mostrará el resultado en un cuarta línea y a continuación se reitera el proceso.
+
+
+
+
+
+
+
+
+
+
+
+Resultados
+	
+Resta
+	 
+
+	Suma 
+	 
+	
+Multiplicación
+	 
+
+
+	División
+	 
+
+	Insertando un valor no numérico
+	 
+	 
+
+
+Conclusiones
+	
+Descripción	Totalidad
+Realiza Suma	100%
+Realiza Resta	100%
+Realiza División	100%
+Realiza Multiplicación	100%
+Imprime Notificaciones	90%
+Terminación del programa Presionando Esc.	0% 
+
+
+
+Recomendaciones
+
+  Se recomienda ser certero con los dígitos ingresados ya que si se ingresa un carácter no numérico el programa no lo aceptará y no permitirá que se ingrese ese valor, además pedirá que se ingresen los 2 dígitos nuevamente de igual manera con los valores de operando.
+
+Nota:
+	Se importaron varias funciones llamadas SCAN_NUM, PRINT_TEXT, PRINT_NUM, PRINT_NUM_UNS y GET_STRING  de la librería interna.
