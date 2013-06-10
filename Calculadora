@@ -1,0 +1,413 @@
+PUTC MACRO CHAR
+    PUSH AX
+    MOV AL,CHAR
+    MOV AH,0EH
+    INT 10H
+    POP AX
+ENDM
+
+ORG 100H
+JMP START
+;This code lines declare variables
+MSG1 DB "Input digit 1:$";0DH,0AH
+MSG2 DB "Input digit 2:$ ";0DH,0AH
+MSG3 DB "Input the operator: $:";0DH, 0AH
+MSG4 DB "Result: $ "
+MSG5 DB "Incorrect digit, insert a numeric value $"
+
+
+;take operator '-','+','*','/'
+OPR DB '?'
+;variable to store ops   
+NUMBER1 DW ?
+NUMBER2 DW ?
+RESULT DW ?
+
+;This variable is used as multiplier-divider by SACN_NUM
+TEN DW 10
+         
+
+
+START:
+; print message requesting op1
+    MOV DX ,OFFSET MSG1
+    CALL PRINT_TEXT
+;get op1 input  
+    CALL SCAN_NUM
+    MOV NUMBER1, CX
+    
+;print new line
+PUTC 0DH
+PUTC 0AH
+
+; Print a text to request the op2
+MOV DX, OFFSET MSG2
+CALL PRINT_TEXT 
+;get op2 input
+CALL SCAN_NUM
+MOV NUMBER2,CX
+
+;print new line
+GET_OPERATOR:
+PUTC 0DH
+PUTC 0AH
+
+;depend on the operator selected this code make a jump to the requested function
+CMP AL,'+' 
+JE DO_SUM
+
+CMP AL, '-'
+JE DO_REST 
+
+CMP AL, '*'
+JE DO_MULT
+
+CMP AL,'!'
+JE DO_DIV
+
+
+ ; print a message to request the operator
+MOV DX, OFFSET MSG3
+CALL PRINT_TEXT     
+;get the operator
+MOV AH,1
+INT 21H
+
+JMP GET_OPERATOR ;jump to the function who get the operator
+
+
+DO_SUM:
+;print a new line
+PUTC 0DH
+PUTC 0AH
+;print the result
+MOV DX,OFFSET MSG4 ;print the variable MSG4 to show the result
+CALL PRINT_TEXT  ;print a text to request the OPS
+MOV AX, NUMBER1
+ADD AX, NUMBER2  ;make the addition between number1 and number 2
+CALL PRINT_NUM   ;print the result
+PUTC 0DH
+PUTC 0AH
+JMP START                                             
+
+DO_REST:
+;print a new line
+PUTC 0DH
+PUTC 0AH
+;print the result
+MOV DX,OFFSET MSG4 ;print the variable MSG4 to show the result
+CALL PRINT_TEXT ;print a text to request the OPS
+MOV AX, NUMBER1
+SUB AX, NUMBER2 ;make the addition between number1 and number 2
+CALL PRINT_NUM ;print the result 
+PUTC 0DH
+PUTC 0AH     
+JMP START    
+    
+DO_MULT:
+;print a new line
+PUTC 0DH
+PUTC 0AH
+;print the result
+MOV DX,OFFSET MSG4 ;print the variable MSG4 to show the result
+CALL PRINT_TEXT    ;print a text to request the OPS
+MOV AX, NUMBER1
+IMUL NUMBER2 ;Multiply Ax by number2
+CALL PRINT_NUM ;print the result
+PUTC 0DH
+PUTC 0AH
+JMP START
+
+DO_DIV:
+;print a new line
+PUTC 0DH
+PUTC 0AH
+;print the result
+MOV DX,OFFSET MSG4 ;print the variable MSG4 to show the result
+CALL PRINT_TEXT  ;print a text to request the OPS 
+MOV AX, NUMBER1
+MOV BX, NUMBER2  
+XOR DX, DX ; Clean the DX register
+DIV BX     ; Divide Ax by Bx
+CALL PRINT_NUM ;print the result
+PUTC 0DH
+PUTC 0AH
+JMP START
+
+
+RET              
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; these functions are copied from emu8086.inc ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+; gets the multi-digit SIGNED number from the keyboard,
+; and stores the result in CX register:
+SCAN_NUM        PROC    NEAR
+        PUSH    DX
+        PUSH    AX
+        PUSH    SI
+        
+        MOV     CX, 0
+
+        ; reset flag:
+        MOV     CS:make_minus, 0
+
+next_digit:
+
+        ; get char from keyboard
+        ; into AL:
+        MOV     AH, 00h
+        INT     16h
+        ; and print it:
+        MOV     AH, 0Eh
+        INT     10h
+
+        ; check for MINUS:
+        CMP     AL, '-'
+        JE      set_minus
+
+        ; check for ENTER key:
+        CMP     AL, 0Dh  ; carriage return?
+        JNE     not_cr
+        JMP     stop_input
+not_cr:
+
+
+        CMP     AL, 8                   ; 'BACKSPACE' pressed?
+        JNE     backspace_checked
+        MOV     DX, 0                   ; remove last digit by
+        MOV     AX, CX                  ; division:
+        DIV     CS:ten                  ; AX = DX:AX / 10 (DX-rem).
+        MOV     CX, AX
+        PUTC    ' '                     ; clear position.
+        PUTC    8                      ; backspace again.  
+        MOV DX,OFFSET MSG5 
+        CALL PRINT_TEXT
+        JMP     next_digit
+backspace_checked:
+
+
+        ; allow only digits:
+        CMP     AL, '0'
+        JAE     ok_AE_0
+        JMP     remove_not_digit
+ok_AE_0:        
+        CMP     AL, '9'
+        JBE     ok_digit
+remove_not_digit:       
+        PUTC    8       ; backspace.
+        PUTC    ' '     ; clear last entered not digit.
+        PUTC    8       ; backspace again.
+        PUTC 0DH
+        PUTC 0AH 
+         MOV DX ,offset msg5
+        CALL PRINT_TEXT
+        PUTC 0DH
+        PUTC 0AH       
+        JMP  START        
+ok_digit:
+
+
+        ; multiply CX by 10 (first time the result is zero)
+        PUSH    AX
+        MOV     AX, CX
+        MUL     CS:ten                  ; DX:AX = AX*10
+        MOV     CX, AX
+        POP     AX
+
+        ; check if the number is too big
+        ; (result should be 16 bits)
+        CMP     DX, 0
+        JNE     too_big
+
+        ; convert from ASCII code:
+        SUB     AL, 30h
+
+        ; add AL to CX:
+        MOV     AH, 0
+        MOV     DX, CX      ; backup, in case the result will be too big.
+        ADD     CX, AX
+        JC      too_big2    ; jump if the number is too big.
+
+        JMP     next_digit
+
+set_minus:
+        MOV     CS:make_minus, 1
+        JMP     next_digit
+
+too_big2:
+        MOV     CX, DX      ; restore the backuped value before add.
+        MOV     DX, 0       ; DX was zero before backup!
+too_big:
+        MOV     AX, CX
+        DIV     CS:ten  ; reverse last DX:AX = AX*10, make AX = DX:AX / 10
+        MOV     CX, AX
+        PUTC    8       ; backspace.
+        PUTC    ' '     ; clear last entered digit.
+        PUTC    8       ; backspace again.        
+        JMP     next_digit ; wait for Enter/Backspace.
+        
+        
+stop_input:
+        ; check flag:
+        CMP     CS:make_minus, 0
+        JE      not_minus
+        NEG     CX
+not_minus:
+
+        POP     SI
+        POP     AX
+        POP     DX
+        RET
+make_minus      DB      ?       ; used as a flag.
+SCAN_NUM        ENDP
+
+;custom procs
+
+;this procedure prints what is in register DX
+PRINT_TEXT PROC NEAR 
+    mov ah,9
+    int 21h 
+    RET
+PRINT_TEXT  ENDP  
+
+; this procedure prints number in AX,
+; used with PRINT_NUM_UNS to print signed numbers:
+PRINT_NUM       PROC    NEAR
+        PUSH    DX
+        PUSH    AX
+
+        CMP     AX, 0
+        JNZ     not_zero
+
+        PUTC    '0'
+        JMP     printed
+
+not_zero:
+        ; the check SIGN of AX,
+        ; make absolute if it's negative:
+        CMP     AX, 0
+        JNS     positive
+        NEG     AX
+
+        PUTC    '-'
+
+positive:
+        CALL    PRINT_NUM_UNS
+printed:
+        POP     AX
+        POP     DX
+        RET
+PRINT_NUM       ENDP
+
+
+
+; this procedure prints out an unsigned
+; number in AX (not just a single digit)
+; allowed values are from 0 to 65535 (FFFF)
+PRINT_NUM_UNS   PROC    NEAR
+        PUSH    AX
+        PUSH    BX
+        PUSH    CX
+        PUSH    DX
+
+        ; flag to prevent printing zeros before number:
+        MOV     CX, 1
+
+        ; (result of "/ 10000" is always less or equal to 9).
+        MOV     BX, 10000       ; 2710h - divider.
+
+        ; AX is zero?
+        CMP     AX, 0
+        JZ      print_zero
+
+begin_print:
+
+        ; check divider (if zero go to end_print):
+        CMP     BX,0
+        JZ      end_print
+
+        ; avoid printing zeros before number:
+        CMP     CX, 0
+        JE      calc
+        ; if AX<BX then result of DIV will be zero:
+        CMP     AX, BX
+        JB      skip
+calc:
+        MOV     CX, 0   ; set flag.
+
+        MOV     DX, 0
+        DIV     BX      ; AX = DX:AX / BX   (DX=remainder).
+
+        ; print last digit
+        ; AH is always ZERO, so it's ignored
+        ADD     AL, 30h    ; convert to ASCII code.
+        PUTC    AL
+
+
+        MOV     AX, DX  ; get remainder from last div.
+
+skip:
+        ; calculate BX=BX/10
+        PUSH    AX
+        MOV     DX, 0
+        MOV     AX, BX
+        DIV     CS:ten  ; AX = DX:AX / 10   (DX=remainder).
+        MOV     BX, AX
+        POP     AX
+
+        JMP     begin_print
+        
+print_zero:
+        PUTC    '0'
+        
+end_print:
+
+        POP     DX
+        POP     CX
+        POP     BX
+        POP     AX
+        RET
+PRINT_NUM_UNS   ENDP
+
+
+
+
+
+
+
+
+
+
+
+GET_STRING      PROC    NEAR
+PUSH    AX
+PUSH    CX
+PUSH    DI
+PUSH    DX
+
+MOV     CX, 0                   ; char counter.
+
+CMP     DX, 1                   ; buffer too small?
+JBE     empty_buffer            ;
+
+DEC     DX                      ; reserve space for last zero.
+
+
+  ;============================
+
+exit_GET_STRING:
+
+; terminate by null:
+MOV     [DI], 0
+
+empty_buffer:
+
+POP     DX
+POP     DI
+POP     CX
+POP     AX
+RET
+GET_STRING      ENDP
+
